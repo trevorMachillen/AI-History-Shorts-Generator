@@ -1,0 +1,10 @@
+streamlit
+openai
+anthropic
+requests
+beautifulsoup4
+pydantic
+python-dotenv
+tiktoken
+markdown
+duckduckgo-search

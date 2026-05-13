@@ -1,0 +1,13 @@
+.env
+.env.local
+__pycache__/
+*.py[cod]
+venv/
+env/
+.vscode/
+.idea/
+.DS_Store
+outputs/scripts/*
+!outputs/scripts/.gitkeep
+data/*
+!data/.gitkeep
