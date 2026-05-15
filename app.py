@@ -54,19 +54,102 @@ if st.button("\U0001f680 Generate Script", type="primary", use_container_width=T
             with st.spinner(f"\U0001f4da Researching '{topic}'..."):
                 research_result = ResearchAgent(llm).research(topic)
 
+            # Save research to file
+            safe_topic = topic.replace(" ", "_").replace("/", "-")[:50]
+            research_dir = pathlib.Path("outputs/research")
+            research_dir.mkdir(parents=True, exist_ok=True)
+            research_file_path = research_dir / f"{safe_topic}_research.txt"
+            research_file_path.write_text(
+                ScriptFormatter.format_research(research_result), encoding="utf-8"
+            )
+
+            # Store in session state for later use
+            st.session_state.research_result = research_result
+            st.session_state.topic = topic
+            st.session_state.duration = duration
+            st.session_state.style = style
+            st.session_state.tone = tone
+            st.session_state.api_provider = api_provider
+            st.session_state.research_file_path = str(research_file_path)
+
+            st.success(f"✅ Research completed! File saved to: {research_file_path}")
+            st.info("👇 Select the research elements you want emphasized in your script below:")
+
+        except Exception as e:
+            st.error(f"❌ Error: {str(e)}")
+            st.write("Check that your API keys are set in the .env file")
+
+# Display research selection UI if research is available
+if "research_result" in st.session_state:
+    st.divider()
+    st.markdown("## \U0001f50d Research Review & Selection")
+    st.markdown("Select which viral elements to emphasize in your script:")
+
+    research_result = st.session_state.research_result
+    viral_elements = research_result.get("viral_elements", {})
+
+    # Create checkboxes for each viral element
+    selected_elements = {}
+    if isinstance(viral_elements, dict):
+        cols = st.columns(2)
+        for idx, (key, value) in enumerate(viral_elements.items()):
+            col = cols[idx % 2]
+            with col:
+                selected_elements[key] = st.checkbox(
+                    key.replace("_", " ").title(),
+                    value=True,
+                    help=f"{key}: {str(value)[:100]}..."
+                )
+
+    st.divider()
+
+    # Display research file link
+    if "research_file_path" in st.session_state:
+        st.markdown(f"📄 **Research file saved:** `{st.session_state.research_file_path}`")
+        with open(st.session_state.research_file_path, "r") as f:
+            research_text = f.read()
+        st.download_button(
+            "📥 Download Research File",
+            research_text,
+            file_name=f"{st.session_state.topic.replace(' ', '_')}_research.txt",
+            mime="text/plain"
+        )
+
+    # Generate script button
+    if st.button("✍️ Generate Script from Selected Research", type="primary", use_container_width=True):
+        try:
+            topic = st.session_state.topic
+            duration = st.session_state.duration
+            style = st.session_state.style
+            tone = st.session_state.tone
+            api_provider = st.session_state.api_provider
+
+            with st.spinner("Initializing..."):
+                llm = LLMHandler()
+                provider = "anthropic" if api_provider == "Anthropic" else "openai"
+                llm.switch_provider(provider)
+
             with st.spinner("\U0001f525 Analyzing viral elements..."):
                 virality_strategy = ViralityAnalyzer(llm).analyze(
                     topic=topic, viral_elements=research_result["viral_elements"],
                     duration=duration, style=style
                 )
 
-            with st.spinner("\u270d\ufe0f Writing script..."):
+            # Build selected research dict for prompt injection
+            selected_research = {k: v for k, v in viral_elements.items() if selected_elements.get(k, False)}
+
+            with st.spinner("✍️ Writing script..."):
                 script_data = ScriptWriter(llm).write(
-                    topic=topic, viral_elements=research_result["viral_elements"],
-                    virality_strategy=virality_strategy, duration=duration, style=style, tone=tone
+                    topic=topic,
+                    viral_elements=research_result["viral_elements"],
+                    virality_strategy=virality_strategy,
+                    duration=duration,
+                    style=style,
+                    tone=tone,
+                    selected_research=selected_research
                 )
 
-            st.success("\u2705 Script generated!")
+            st.success("✅ Script generated!")
             st.divider()
             st.markdown(f"## \U0001f4dd {script_data.get('title', 'Your Script')}")
 
@@ -107,18 +190,22 @@ if st.button("\U0001f680 Generate Script", type="primary", use_container_width=T
                 st.download_button("\U0001f4e5 Download as Markdown", ScriptFormatter.format_for_markdown(script_data),
                     file_name=f"script_{topic.replace(' ', '_')}.md", mime="text/markdown")
 
+            # Clear session state after generating script
+            del st.session_state.research_result
+            st.rerun()
+
         except Exception as e:
-            st.error(f"\u274c Error: {str(e)}")
+            st.error(f"❌ Error: {str(e)}")
             st.write("Check that your API keys are set in the .env file")
 
 st.divider()
-with st.expander("\u2139\ufe0f How it works"):
+with st.expander("ℹ️ How it works"):
     st.markdown("""
     **4-stage pipeline:**
-    1. **Research** \u2192 Searches for facts and extracts viral storytelling elements
-    2. **Virality Analysis** \u2192 Optimizes emotional arc, pacing, and retention hooks
-    3. **Prompt Engineering** \u2192 Dynamically builds the perfect generation prompt
-    4. **Script Generation** \u2192 Creates a cinematic, viral-optimized script
+    1. **Research** → Searches for facts and extracts viral storytelling elements
+    2. **Virality Analysis** → Optimizes emotional arc, pacing, and retention hooks
+    3. **Prompt Engineering** → Dynamically builds the perfect generation prompt
+    4. **Script Generation** → Creates a cinematic, viral-optimized script
 
     Multi-stage approach = dramatically better quality than direct generation.
     """)
@@ -131,4 +218,3 @@ with st.expander("\U0001f511 API Keys"):
     ```
     Get keys: [OpenAI](https://platform.openai.com/api-keys) | [Anthropic](https://console.anthropic.com/)
     """)
-
