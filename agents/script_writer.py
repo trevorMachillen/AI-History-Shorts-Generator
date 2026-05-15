@@ -10,10 +10,10 @@ class ScriptWriter:
         self.prompt_builder = PromptBuilder()
 
     def write(self, topic: str, viral_elements: Dict[str, Any], virality_strategy: Dict[str, Any],
-              duration: int = 60, style: str = "cinematic", tone: str = "dramatic") -> Dict[str, str]:
+              duration: int = 60, style: str = "cinematic", tone: str = "dramatic", selected_research: Dict[str, Any] = None) -> Dict[str, str]:
         response = self.llm.generate(
             system_prompt=self.prompt_builder.build_system_prompt(),
-            user_prompt=self.prompt_builder.build(topic, viral_elements, virality_strategy, duration, style, tone),
+            user_prompt=self.prompt_builder.build(topic, viral_elements, virality_strategy, duration, style, tone, selected_research),
             task_type="script",
             max_tokens=3000
         )

@@ -7,11 +7,20 @@ class PromptBuilder:
         pass
 
     def build(self, topic: str, viral_elements: Dict[str, Any], virality_strategy: Dict[str, Any],
-              duration: int = 60, style: str = "cinematic", tone: str = "dramatic") -> str:
+              duration: int = 60, style: str = "cinematic", tone: str = "dramatic", selected_research: Dict[str, Any] = None) -> str:
         timing = {
             60: {"hook": "0-3s", "setup": "3-15s", "escalation": "15-50s", "payoff": "50-60s"},
             90: {"hook": "0-3s", "setup": "3-20s", "escalation": "20-70s", "payoff": "70-90s"}
         }.get(duration, {"hook": "0-3s", "setup": "3-15s", "escalation": "15-50s", "payoff": "50-60s"})
+
+        selected_research_str = ""
+        if selected_research and isinstance(selected_research, dict) and len(selected_research) > 0:
+            selected_research_str = f"""
+USER-SELECTED EMPHASIS:
+The user has chosen to particularly emphasize these research elements:
+{json.dumps(selected_research, indent=2)}
+Please ensure these selected elements are prominently featured in the generated script.
+"""
 
         return f"""Create a YouTube Shorts script about: "{topic}"
 
@@ -24,7 +33,7 @@ TIMING:
 - Payoff ({timing['payoff']}): Shocking conclusion
 
 VIRAL ELEMENTS: {json.dumps(viral_elements, indent=2)}
-STORYTELLING STRATEGY: {json.dumps(virality_strategy, indent=2)}
+STORYTELLING STRATEGY: {json.dumps(virality_strategy, indent=2)}{selected_research_str}
 
 RULES:
 1. Every sentence must increase curiosity or emotional intensity

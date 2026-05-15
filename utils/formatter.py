@@ -1,5 +1,7 @@
 from typing import Dict, Any
 import re
+from datetime import datetime
+import json
 
 
 class ScriptFormatter:
@@ -44,3 +46,36 @@ class ScriptFormatter:
         full_text = re.sub(r"\n{3,}", "\n\n", full_text)
 
         return full_text.strip()
+
+    @staticmethod
+    def format_research(research_data: Dict[str, Any]) -> str:
+        output = []
+        output.append("AI HISTORY SHORTS GENERATOR - RESEARCH FILE")
+        output.append(f"Topic: {research_data.get('topic', 'Unknown')}")
+        output.append(f"Generated: {datetime.now().isoformat()}")
+        output.append("")
+
+        # Raw search results
+        output.append("=" * 50)
+        output.append("RAW SEARCH RESULTS")
+        output.append("=" * 50)
+        output.append("")
+
+        if research_data.get("research_data"):
+            output.append(research_data.get("research_data"))
+        output.append("")
+
+        # Extracted viral elements
+        output.append("=" * 50)
+        output.append("EXTRACTED VIRAL ELEMENTS")
+        output.append("=" * 50)
+        output.append("")
+
+        viral_elements = research_data.get("viral_elements", {})
+        if isinstance(viral_elements, dict):
+            for key, value in viral_elements.items():
+                output.append(f"{key.upper().replace('_', ' ')}:")
+                output.append(str(value))
+                output.append("")
+
+        return "\n".join(output)
