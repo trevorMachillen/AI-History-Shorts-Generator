@@ -10,6 +10,7 @@ from utils.formatter import ScriptFormatter
 
 load_dotenv()
 
+
 st.set_page_config(page_title="AI History Shorts Generator", page_icon="\U0001f3ac", layout="wide")
 
 st.title("\U0001f3ac AI History Shorts Generator")
@@ -83,37 +84,60 @@ if st.button("\U0001f680 Generate Script", type="primary", use_container_width=T
 if "research_result" in st.session_state:
     st.divider()
     st.markdown("## \U0001f50d Research Review & Selection")
-    st.markdown("Select which viral elements to emphasize in your script:")
 
     research_result = st.session_state.research_result
-    viral_elements = research_result.get("viral_elements", {})
 
-    # Create checkboxes for each viral element
-    selected_elements = {}
-    if isinstance(viral_elements, dict):
-        cols = st.columns(2)
-        for idx, (key, value) in enumerate(viral_elements.items()):
-            col = cols[idx % 2]
-            with col:
-                selected_elements[key] = st.checkbox(
-                    key.replace("_", " ").title(),
-                    value=True,
-                    help=f"{key}: {str(value)[:100]}..."
-                )
-
-    st.divider()
-
-    # Display research file link
+    # Read formatted research text
+    research_text = ""
     if "research_file_path" in st.session_state:
-        st.markdown(f"📄 **Research file saved:** `{st.session_state.research_file_path}`")
-        with open(st.session_state.research_file_path, "r") as f:
+        with open(st.session_state.research_file_path, "r", encoding="utf-8") as f:
             research_text = f.read()
-        st.download_button(
-            "📥 Download Research File",
-            research_text,
-            file_name=f"{st.session_state.topic.replace(' ', '_')}_research.txt",
-            mime="text/plain"
-        )
+
+    # Full research display
+    st.markdown("### \U0001f4c4 Full Research")
+    st.text_area(
+        "research_display",
+        value=research_text,
+        height=320,
+        disabled=True,
+        label_visibility="collapsed",
+    )
+    st.download_button(
+        "\U0001f4e5 Download Research",
+        research_text,
+        file_name=f"{st.session_state.topic.replace(' ', '_')}_research.txt",
+        mime="text/plain",
+    )
+
+    # AI-curated highlights
+    st.divider()
+    st.markdown("### \U0001f525 AI-Selected Key Points")
+    st.markdown("The AI picked these as the highest viral-potential moments. Uncheck any you want to exclude.")
+
+    st.markdown("""
+<style>
+div[data-testid="stCheckbox"] label {
+    padding: 4px 8px 4px 10px;
+    border-left: 3px solid transparent;
+    border-radius: 3px;
+    line-height: 1.5;
+    transition: background 0.15s, border-color 0.15s;
+}
+div[data-testid="stCheckbox"]:has(input:checked) label {
+    background: rgba(255, 204, 0, 0.18);
+    border-left: 3px solid #ffcc00;
+}
+</style>
+""", unsafe_allow_html=True)
+
+    key_highlights = research_result.get("key_highlights", [])
+    selected_highlights = []
+    if key_highlights:
+        for i, item in enumerate(key_highlights):
+            if st.checkbox(item, key=f"kh_{i}", value=True):
+                selected_highlights.append(item)
+    else:
+        st.info("No AI highlights available — all research will be used for the script.")
 
     # Generate script button
     if st.button("✍️ Generate Script from Selected Research", type="primary", use_container_width=True):
@@ -135,9 +159,6 @@ if "research_result" in st.session_state:
                     duration=duration, style=style
                 )
 
-            # Build selected research dict for prompt injection
-            selected_research = {k: v for k, v in viral_elements.items() if selected_elements.get(k, False)}
-
             with st.spinner("✍️ Writing script..."):
                 script_data = ScriptWriter(llm).write(
                     topic=topic,
@@ -146,7 +167,7 @@ if "research_result" in st.session_state:
                     duration=duration,
                     style=style,
                     tone=tone,
-                    selected_research=selected_research
+                    selected_highlights=selected_highlights,
                 )
 
             st.success("✅ Script generated!")

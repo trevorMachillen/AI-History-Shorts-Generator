@@ -65,6 +65,15 @@ class ScriptFormatter:
             output.append(research_data.get("research_data"))
         output.append("")
 
+        # Investigation notes
+        if research_data.get("investigation_notes"):
+            output.append("=" * 50)
+            output.append("INVESTIGATION NOTES")
+            output.append("=" * 50)
+            output.append("")
+            output.append(research_data.get("investigation_notes"))
+            output.append("")
+
         # Extracted viral elements
         output.append("=" * 50)
         output.append("EXTRACTED VIRAL ELEMENTS")
